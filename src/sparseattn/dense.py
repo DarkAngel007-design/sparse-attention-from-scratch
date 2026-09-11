@@ -21,6 +21,7 @@ def masked_softmax(
     scores: torch.Tensor,
     mask: Optional[torch.Tensor],
     policy: DeadRowPolicy = "zero",
+    fallback: Optional[torch.Tensor] = None,
 ) -> torch.Tensor:
     """Softmax over the last dim, honouring `mask` (True == attendable).
 
@@ -60,14 +61,28 @@ def masked_softmax(
         )
 
     if policy == "self":
-        # Let a dead query attend to itself.  Only meaningful when the query and
-        # key sequences are the same length and aligned (self-attention).
-        nq, nk = scores.shape[-2], scores.shape[-1]
-        if nq != nk:
-            raise ValueError("policy='self' needs square attention (Nq == Nk).")
-        eye = torch.eye(nq, dtype=torch.bool, device=scores.device)
-        mask = mask | (dead & eye)
-        dead = ~mask.any(dim=-1, keepdim=True)  # now empty
+        # Let a dead query attend to itself.  "Itself" is a statement about
+        # positions, and the caller is the only one who knows how positions map
+        # onto the last axis of `scores`.  For dense attention that axis is the
+        # key sequence, so the diagonal is the identity.  For the block-sparse
+        # kernel the axis is gathered key slots, whose absolute positions are
+        # scattered -- there the identity is meaningless and the caller passes
+        # (key_position == query_position) instead.  Defaulting to eye() here
+        # was a bug: it silently assumed the dense layout.
+        if fallback is None:
+            nq, nk = scores.shape[-2], scores.shape[-1]
+            if nq != nk:
+                raise ValueError(
+                    "policy='self' on a non-square score matrix needs an explicit "
+                    "`fallback` mask marking where each query's own position sits.")
+            fallback = torch.eye(nq, dtype=torch.bool, device=scores.device)
+        mask = mask | (dead & fallback)
+        dead = ~mask.any(dim=-1, keepdim=True)
+        if bool(dead.any()):
+            raise ValueError(
+                "policy='self' could not revive every dead row: the fallback mask "
+                "does not cover them. Check that the query's own position is "
+                "reachable in the gathered key set.")
 
     # Dead rows attend to everything -> finite logits -> finite softmax.
     safe_mask = mask | dead

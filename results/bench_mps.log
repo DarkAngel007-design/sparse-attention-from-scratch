@@ -1,0 +1,36 @@
+pattern               N  density        ms   peak MB   score elems
+----------------------------------------------------------------------
+dense               512    0.501      1.68      28.8     2,097,152
+sliding_window      512    0.173      1.40      14.8       524,288
+bigbird             512    0.407      1.88      32.2     1,310,720
+dilated             512    0.329      1.82      26.4     1,048,576
+dense              1024    0.500      4.96     109.1     8,388,608
+sliding_window     1024    0.090      3.42      29.5     1,048,576
+bigbird            1024    0.243      4.79      64.4     2,621,440
+dilated            1024    0.223      3.77      64.4     2,621,440
+dense              2048    0.500     10.45     557.8    33,554,432
+sliding_window     2048    0.046      3.03      59.1     2,097,152
+bigbird            2048    0.131      5.23     128.7     5,242,880
+dilated            2048    0.126      5.39     128.7     5,242,880
+dense              4096    0.500     40.20    1669.3   134,217,728
+sliding_window     4096    0.023      6.31     118.1     4,194,304
+bigbird            4096    0.068      8.35     257.4    10,485,760
+dilated            4096    0.067      9.61     257.4    10,485,760
+dense              8192    0.500    159.12    6627.0   536,870,912
+sliding_window     8192    0.012      7.42     236.2     8,388,608
+bigbird            8192    0.035     16.97     514.8    20,971,520
+dilated            8192    0.034     16.66     598.7    20,971,520
+
+wrote /Users/darkangel/Github/sparse-attention-from-scratch/results/benchmark.json
+hardware: {
+  "platform": "macOS-26.6.2-arm64-arm-64bit",
+  "machine": "arm64",
+  "python": "3.12.13",
+  "torch": "2.14.0",
+  "device": "mps",
+  "timestamp": "2026-09-11 16:45:51 IST",
+  "cpu": "Apple M5 Pro",
+  "ram_gb": 25.8,
+  "cores": 18,
+  "accelerator": "Apple Metal (unified memory)"
+}

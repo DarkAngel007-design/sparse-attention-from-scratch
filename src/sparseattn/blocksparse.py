@@ -97,12 +97,19 @@ def block_sparse_attention(
 
         m = valid_tok[:, s:e].unsqueeze(0).unsqueeze(3)             # (1,H,c,1,K*bs)
         m = m.expand(1, H, c, bs, K * bs)
+        qp_c = qpos_all[s:e].view(1, 1, c, bs, 1)
+        kp_c = kpos[:, s:e].view(1, H, c, 1, K * bs)
         if pattern.causal:
-            qp_c = qpos_all[s:e].view(1, 1, c, bs, 1)
-            kp_c = kpos[:, s:e].view(1, H, c, 1, K * bs)
             m = m & (kp_c <= qp_c)
 
-        attn = masked_softmax(scores, m, policy=policy)
+        # Where does each query's own position land among the gathered slots?
+        # The kernel's last axis is gathered key slots, not key positions, so
+        # policy='self' cannot find the diagonal on its own.  Each absolute key
+        # position appears in at most one slot (to_gather_index emits a
+        # permutation), so this is unambiguous.
+        fb = (kp_c == qp_c) & (kp_c < N) if policy == "self" else None
+
+        attn = masked_softmax(scores, m, policy=policy, fallback=fb)
         outs.append(attn @ vg)                                      # (B,H,c,bs,D)
 
     out = torch.cat(outs, dim=2).reshape(B, H, n_pad, D)
