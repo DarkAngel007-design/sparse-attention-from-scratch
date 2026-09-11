@@ -1,0 +1,133 @@
+corpus 1,115,394 chars, vocab 65, train 1,003,854 / val 111,540
+
+=== dense seed=1337 === density=1.000 (100.0% of causal-dense), params=445,184
+  step  1000  train 1.6779  val 1.8747  (18s)
+  step  2000  train 1.5040  val 1.7077  (37s)
+  step  3000  train 1.4627  val 1.6432  (57s)
+  step  4000  train 1.4088  val 1.5973  (75s)
+  step  5000  train 1.3114  val 1.5797  (93s)
+  step  6000  train 1.3383  val 1.5591  (111s)
+  step  7000  train 1.3272  val 1.5521  (129s)
+  step  8000  train 1.2586  val 1.5483  (149s)
+
+=== dense seed=42 === density=1.000 (100.0% of causal-dense), params=445,184
+  step  1000  train 1.7210  val 1.8688  (21s)
+  step  2000  train 1.5523  val 1.6702  (42s)
+  step  3000  train 1.3596  val 1.6139  (62s)
+  step  4000  train 1.3602  val 1.5803  (85s)
+  step  5000  train 1.2859  val 1.5538  (113s)
+  step  6000  train 1.2919  val 1.5487  (135s)
+  step  7000  train 1.2275  val 1.5454  (156s)
+  step  8000  train 1.2614  val 1.5475  (174s)
+
+=== dense seed=7 === density=1.000 (100.0% of causal-dense), params=445,184
+  step  1000  train 1.7405  val 1.8980  (20s)
+  step  2000  train 1.5577  val 1.7060  (41s)
+  step  3000  train 1.4489  val 1.6255  (63s)
+  step  4000  train 1.3899  val 1.5870  (88s)
+  step  5000  train 1.3036  val 1.5696  (116s)
+  step  6000  train 1.2983  val 1.5565  (144s)
+  step  7000  train 1.2850  val 1.5460  (171s)
+  step  8000  train 1.2536  val 1.5498  (198s)
+
+=== sliding_window seed=1337 === density=0.174 (34.6% of causal-dense), params=445,184
+  step  1000  train 1.5191  val 1.7280  (26s)
+  step  2000  train 1.3817  val 1.5951  (50s)
+  step  3000  train 1.3210  val 1.5489  (77s)
+  step  4000  train 1.2753  val 1.5351  (106s)
+  step  5000  train 1.1944  val 1.5374  (135s)
+  step  6000  train 1.2372  val 1.5455  (164s)
+  step  7000  train 1.2183  val 1.5525  (191s)
+  step  8000  train 1.1582  val 1.5551  (219s)
+
+=== sliding_window seed=42 === density=0.174 (34.6% of causal-dense), params=445,184
+  step  1000  train 1.5806  val 1.7457  (26s)
+  step  2000  train 1.4363  val 1.5844  (54s)
+  step  3000  train 1.2779  val 1.5607  (81s)
+  step  4000  train 1.2714  val 1.5438  (111s)
+  step  5000  train 1.2067  val 1.5433  (141s)
+  step  6000  train 1.2274  val 1.5427  (176s)
+  step  7000  train 1.1520  val 1.5527  (209s)
+  step  8000  train 1.1937  val 1.5605  (241s)
+
+=== sliding_window seed=7 === density=0.174 (34.6% of causal-dense), params=445,184
+  step  1000  train 1.5984  val 1.7664  (27s)
+  step  2000  train 1.4410  val 1.6072  (55s)
+  step  3000  train 1.3364  val 1.5527  (82s)
+  step  4000  train 1.2874  val 1.5429  (106s)
+  step  5000  train 1.2150  val 1.5453  (131s)
+  step  6000  train 1.2172  val 1.5439  (155s)
+  step  7000  train 1.2001  val 1.5601  (178s)
+  step  8000  train 1.1758  val 1.5647  (203s)
+
+=== bigbird seed=1337 === density=0.408 (81.3% of causal-dense), params=445,184
+  step  1000  train 1.6651  val 1.8568  (24s)
+  step  2000  train 1.4989  val 1.6911  (51s)
+  step  3000  train 1.4472  val 1.6278  (95s)
+  step  4000  train 1.3875  val 1.5857  (135s)
+  step  5000  train 1.2815  val 1.5699  (166s)
+  step  6000  train 1.3198  val 1.5487  (191s)
+  step  7000  train 1.3091  val 1.5516  (213s)
+  step  8000  train 1.2344  val 1.5476  (236s)
+
+=== bigbird seed=42 === density=0.408 (81.3% of causal-dense), params=445,184
+  step  1000  train 1.7114  val 1.8687  (24s)
+  step  2000  train 1.5602  val 1.6604  (47s)
+  step  3000  train 1.3662  val 1.6074  (70s)
+  step  4000  train 1.3456  val 1.5736  (94s)
+  step  5000  train 1.2807  val 1.5419  (116s)
+  step  6000  train 1.2947  val 1.5499  (137s)
+  step  7000  train 1.2165  val 1.5410  (158s)
+  step  8000  train 1.2654  val 1.5484  (181s)
+
+=== bigbird seed=7 === density=0.408 (81.3% of causal-dense), params=445,184
+  step  1000  train 1.7386  val 1.8856  (23s)
+  step  2000  train 1.5531  val 1.6974  (46s)
+  step  3000  train 1.4516  val 1.6095  (68s)
+  step  4000  train 1.3732  val 1.5804  (89s)
+  step  5000  train 1.2907  val 1.5690  (110s)
+  step  6000  train 1.2808  val 1.5549  (131s)
+  step  7000  train 1.2741  val 1.5521  (153s)
+  step  8000  train 1.2328  val 1.5526  (174s)
+
+=== dilated seed=1337 === density=0.330 (65.8% of causal-dense), params=445,184
+  step  1000  train 1.6329  val 1.8380  (18s)
+  step  2000  train 1.4332  val 1.6414  (36s)
+  step  3000  train 1.3671  val 1.5700  (54s)
+  step  4000  train 1.3140  val 1.5395  (73s)
+  step  5000  train 1.2229  val 1.5427  (92s)
+  step  6000  train 1.2602  val 1.5316  (112s)
+  step  7000  train 1.2481  val 1.5399  (131s)
+  step  8000  train 1.1739  val 1.5412  (150s)
+
+=== dilated seed=42 === density=0.330 (65.8% of causal-dense), params=445,184
+  step  1000  train 1.7050  val 1.8533  (19s)
+  step  2000  train 1.4968  val 1.6347  (38s)
+  step  3000  train 1.3107  val 1.5857  (57s)
+  step  4000  train 1.3199  val 1.5465  (76s)
+  step  5000  train 1.2468  val 1.5371  (95s)
+  step  6000  train 1.2558  val 1.5338  (116s)
+  step  7000  train 1.1889  val 1.5339  (134s)
+  step  8000  train 1.2321  val 1.5499  (152s)
+
+=== dilated seed=7 === density=0.330 (65.8% of causal-dense), params=445,184
+  step  1000  train 1.7194  val 1.8619  (18s)
+  step  2000  train 1.5115  val 1.6448  (36s)
+  step  3000  train 1.3909  val 1.5712  (54s)
+  step  4000  train 1.3192  val 1.5535  (72s)
+  step  5000  train 1.2525  val 1.5417  (91s)
+  step  6000  train 1.2521  val 1.5368  (109s)
+  step  7000  train 1.2472  val 1.5395  (127s)
+  step  8000  train 1.1959  val 1.5388  (146s)
+
+pattern           density  vs dense  val loss   spread    delta  signif?
+--------------------------------------------------------------------------
+dense               1.000    100.0%    1.5485   0.0023  +0.0000       --
+sliding_window      0.174     34.6%    1.5601   0.0097  +0.0116      yes
+bigbird             0.408     81.3%    1.5496   0.0050  +0.0010       NO
+dilated             0.330     65.8%    1.5433   0.0112  -0.0052       NO
+
+3 seed(s) per pattern; 'val loss' is the mean, 'spread' is max-min across seeds.
+A delta smaller than the spread is not a result.
+
+wrote results/quality_ctx256.json
