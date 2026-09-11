@@ -69,6 +69,36 @@ everything; drop the top sequence length or two from the benchmark.
 | Stretch: third pattern | `patterns.py::dilated` | done |
 | Stretch: per-head pattern mixing | `patterns.py::bigbird(per_head_random=True)` | done |
 
+## Results at a glance
+
+**Speed and memory** (forward pass, B=1 H=8 D=64, block 64, median of 5):
+
+| N | dense | sliding window | BigBird |
+| --- | --- | --- | --- |
+| 512 | 1.68 ms / 28.8 MB | 1.40 ms / 14.8 MB | 1.88 ms / 32.2 MB |
+| 2048 | 10.45 ms / 557.8 MB | 3.03 ms / 59.1 MB | 5.23 ms / 128.7 MB |
+| 8192 | 159.12 ms / 6627.0 MB | **7.42 ms / 236.2 MB** | 16.97 ms / 514.8 MB |
+
+21× faster and 28× lighter at N=8192 for the sliding window. **But at N=512 both
+BigBird and dilated are slower than dense** — the gather copies K and V, and
+below ~1k tokens that memory traffic costs more than the skipped FLOPs buy.
+
+**Quality** (2-layer char GPT, TinyShakespeare, 3 seeds, 8000 steps):
+
+| pattern | density | val loss | seed spread | vs dense | beyond noise? |
+| --- | --- | --- | --- | --- | --- |
+| dense | 100% | 1.5485 | 0.0023 | — | — |
+| sliding window | 34.6% | 1.5601 | 0.0097 | +0.0116 | yes |
+| BigBird | 81.3% | 1.5496 | 0.0050 | +0.0010 | no |
+| dilated | 65.8% | 1.5433 | 0.0112 | −0.0052 | no |
+
+The ranking depends on when you stop. At step 4000 every sparse pattern *beat*
+dense; dense overtakes sliding window at step 7000. Sparse converges faster
+(smaller, well-matched hypothesis space) and then overfits harder (sliding window
+ends with the lowest **training** loss of all four and the highest validation
+loss). `WRITEUP.md` §5 has the full account — it is the most interesting result
+in the repository and it contradicts the first version of this experiment.
+
 ## Design in one paragraph
 
 A sparsity pattern is a block mask of shape `(H, NQB, NKB)` — "may query block
