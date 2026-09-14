@@ -1,6 +1,0 @@
-torch>=2.2
-numpy
-matplotlib
-
-[dev]
-pytest>=8

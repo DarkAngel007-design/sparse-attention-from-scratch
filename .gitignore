@@ -1,6 +1,12 @@
 .venv/
 __pycache__/
 *.pyc
-data/*.txt
-results/*.json
+*.egg-info/
 .pytest_cache/
+.DS_Store
+
+# TinyShakespeare is downloaded by scripts/train_char_gpt.py on first run.
+data/*.txt
+
+# results/*.json are NOT ignored: WRITEUP.md quotes exact numbers from them, and
+# a reader should be able to check those without a GPU and a re-run.
