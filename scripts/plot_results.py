@@ -31,7 +31,11 @@ def plot_benchmark():
         print("no benchmark.json, skipping"); return
     d = json.loads(path.read_text())
     rows = [r for r in d["rows"] if r.get("ok")]
-    pats = sorted({r["pattern"] for r in rows}, key=lambda p: p != "dense")
+    # Sort on (is-not-dense, name), not on the boolean alone.  Sorting a *set* by
+    # a bool puts "dense" first and leaves the rest in set-iteration order, which
+    # depends on PYTHONHASHSEED -- so the draw order of the three sparse curves,
+    # and hence the pixels where they overlap, changed between runs.
+    pats = sorted({r["pattern"] for r in rows}, key=lambda p: (p != "dense", p))
 
     fig, axes = plt.subplots(1, 3, figsize=(16, 4.6))
     for p in pats:
