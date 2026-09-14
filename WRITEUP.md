@@ -46,8 +46,9 @@ float64. The checks that earned their place:
 One check failed instructively: under adversarial magnitudes (logits ≈ ±4800) the
 sparse output differed from the float64 reference by 9.2e-3. Not a kernel error —
 float32 sparse vs **float32** dense is bit-exact; the gap is float32 diverging from
-float64 in the reference itself, and one ulp at |logit| ≈ 4800 (2.9e-4), inherited
-by softmax and scaled by `|v| ≈ 30`, predicts ≈ 8.7e-3. The check now asserts the
+float64 in the reference itself, and half an ulp at |logit| ≈ 4800 (≈2.4e-4),
+inherited by softmax and scaled by `|v| ≈ 30`, predicts ≈ 7.3e-3 against a
+measured 9.2e-3. The check now asserts the
 kernel claim and *reports* the precision one separately.
 
 ## 3. The NaN (1.4)

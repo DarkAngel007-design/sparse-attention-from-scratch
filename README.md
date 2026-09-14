@@ -54,6 +54,13 @@ everything; drop the top sequence length or two from the benchmark.
 | `scripts/train_char_gpt.py` | Deliverable 1.6 — dense vs each pattern on TinyShakespeare |
 | `scripts/plot_results.py` | Plots for 1.5 and 1.6 |
 | `WRITEUP.md` | Deliverable 1.7 |
+| `docs/` | Per-deliverable notes — what, why, how, and the design alternatives rejected |
+
+## Per-deliverable notes
+
+[`docs/`](docs/) has one file per deliverable covering what was built, why it was
+built that way, how the code works, and the failure modes — including four claims
+that were wrong when first written and were corrected by measurement.
 
 ## Deliverables
 

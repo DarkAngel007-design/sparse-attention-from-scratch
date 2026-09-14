@@ -3,7 +3,12 @@
 The point of this file is that the (Nq x Nk) score matrix is never built.  For
 each query block we gather only the K/V blocks its pattern selects, so the
 largest tensor allocated is (B, H, NQB, bs, K*bs) instead of (B, H, N, N).
-With N = 8192, bs = 64 and K = 6 that is a ~21x reduction in the score tensor.
+
+K -- the number of key blocks a query block selects -- is constant in N for
+these patterns, which is exactly why the score tensor is O(N) rather than
+O(N^2).  Measured at bs = 64: sliding window K = 2 and BigBird K = 5 at every
+sequence length tested.  At N = 8192 that is a 64x and 25.6x smaller score
+tensor respectively.
 
 What this is *not*: a fused kernel.  The gather physically copies K and V, and
 for a sliding window the copies overlap (block i-1 is gathered again by query

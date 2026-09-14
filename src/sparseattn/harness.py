@@ -148,8 +148,9 @@ def check_adversarial_magnitudes(device="cpu") -> Result:
 
     Folding (2) into the pass criterion would make the harness fail for a reason
     that has nothing to do with the code under test.  The number is still worth
-    printing: one float32 ulp at |logit| ~ 5e3 is ~3e-4, softmax weights inherit
-    that as relative error, and it lands in the output scaled by |v|.
+    printing: the maximum rounding error on a float32 logit is half an ulp (2^-24
+    relative), so at |logit| ~ 5e3 it is ~2.4e-4; softmax weights inherit that as
+    relative error, and it lands in the output scaled by |v|.
     """
     N, bs, B, H, D = 256, 64, 1, 2, 32
     pat = _build("bigbird", N, bs, H, True, device=device)
