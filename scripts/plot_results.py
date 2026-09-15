@@ -18,6 +18,8 @@ STYLE = {"dense": "-o", "sliding_window": "-s", "bigbird": "-^", "dilated": "-d"
 
 
 def hw_line(hw):
+    """Hardware string stamped onto every plot.  A benchmark plot without the
+    machine on it is not reproducible -- absolute ms mean nothing elsewhere."""
     if hw.get("gpu"):
         return f"{hw['gpu']} | torch {hw['torch']} | {hw['timestamp']}"
     return (f"{hw.get('cpu','?')} ({hw.get('cores','?')} cores, "

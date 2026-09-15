@@ -21,7 +21,7 @@ sliding_window     8192    0.012      7.42     236.2     8,388,608
 bigbird            8192    0.035     16.97     514.8    20,971,520
 dilated            8192    0.034     16.66     598.7    20,971,520
 
-wrote /Users/darkangel/Github/sparse-attention-from-scratch/results/benchmark.json
+wrote results/benchmark.json
 hardware: {
   "platform": "macOS-26.6.2-arm64-arm-64bit",
   "machine": "arm64",

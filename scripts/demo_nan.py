@@ -14,6 +14,8 @@ def rule(t):
     print(f"\n{'='*72}\n{t}\n{'='*72}")
 
 
+# Tiny shapes on purpose: the whole point is that you can print every number and
+# see the nan with your own eyes.
 torch.manual_seed(0)
 B, H, N, D = 1, 2, 8, 4
 q, k, v = (torch.randn(B, H, N, D) for _ in range(3))

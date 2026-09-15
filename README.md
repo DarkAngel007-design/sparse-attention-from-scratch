@@ -48,26 +48,24 @@ everything; drop the top sequence length or two from the benchmark.
 | `src/sparseattn/blocksparse.py` | The gather-based kernel that never materialises the N×N score matrix |
 | `src/sparseattn/harness.py` | Every correctness check, shared by the pytest suite and the standalone script |
 | `src/sparseattn/model.py` | 2-layer character GPT with a swappable attention backend |
-| `scripts/check_correctness.py` | Deliverable 1.3 — pass/fail report |
-| `scripts/demo_nan.py` | Deliverable 1.4 — the NaN, why the obvious fix isn't one, and the policies |
-| `scripts/benchmark.py` | Deliverable 1.5 — wall clock and peak memory, 512 → 8192 |
-| `scripts/train_char_gpt.py` | Deliverable 1.6 — dense vs each pattern on TinyShakespeare |
+| `scripts/check_correctness.py` | Deliverable 1.3: pass/fail report |
+| `scripts/demo_nan.py` | Deliverable 1.4: the NaN, why the obvious fix isn't one, and the policies |
+| `scripts/benchmark.py` | Deliverable 1.5: wall clock and peak memory, 512 → 8192 |
+| `scripts/train_char_gpt.py` | Deliverable 1.6: dense vs each pattern on TinyShakespeare |
 | `scripts/plot_results.py` | Plots for 1.5 and 1.6 |
 | `WRITEUP.md` | Deliverable 1.7 |
-| `docs/` | Per-deliverable notes — what, why, how, and the design alternatives rejected |
 
-## Per-deliverable notes
-
-[`docs/`](docs/) has one file per deliverable covering what was built, why it was
-built that way, how the code works, and the failure modes — including four claims
-that were wrong when first written and were corrected by measurement.
+Every source file is commented for a reader coming to it cold, explaining not
+just what a line does but why the alternative was rejected and what breaks if it
+changes. [`src/sparseattn/dense.py`](src/sparseattn/dense.py) is the place to
+start; it is the reference implementation everything else is checked against.
 
 ## Deliverables
 
 | Item | Where | Status |
 | --- | --- | --- |
 | 1.1 Manual dense attention | `dense.py::dense_attention` | done |
-| 1.2 Two sparsity patterns | `patterns.py` — sliding window, BigBird (local+global+random) | done, plus a third (dilated) |
+| 1.2 Two sparsity patterns | `patterns.py`: sliding window, BigBird (local+global+random) | done, plus a third (dilated) |
 | 1.3 Correctness harness | `scripts/check_correctness.py`, 72 checks | done |
 | 1.4 NaN handling | `dense.py::masked_softmax`, `scripts/demo_nan.py` | done |
 | 1.5 Benchmark | `scripts/benchmark.py`, 512 → 8192 | done |
@@ -87,14 +85,14 @@ that were wrong when first written and were corrected by measurement.
 | 8192 | 159.12 ms / 6627.0 MB | **7.42 ms / 236.2 MB** | 16.97 ms / 514.8 MB |
 
 21× faster and 28× lighter at N=8192 for the sliding window. **But at N=512 both
-BigBird and dilated are slower than dense** — the gather copies K and V, and
+BigBird and dilated are slower than dense.** The gather copies K and V, and
 below ~1k tokens that memory traffic costs more than the skipped FLOPs buy.
 
 **Quality** (2-layer char GPT, TinyShakespeare, 3 seeds, 8000 steps):
 
 | pattern | density | val loss | seed spread | vs dense | beyond noise? |
 | --- | --- | --- | --- | --- | --- |
-| dense | 100% | 1.5485 | 0.0023 | — | — |
+| dense | 100% | 1.5485 | 0.0023 | n/a | n/a |
 | sliding window | 34.6% | 1.5601 | 0.0097 | +0.0116 | yes |
 | BigBird | 81.3% | 1.5496 | 0.0050 | +0.0010 | no |
 | dilated | 65.8% | 1.5433 | 0.0112 | −0.0052 | no |
@@ -103,12 +101,12 @@ The ranking depends on when you stop. At step 4000 every sparse pattern *beat*
 dense; dense overtakes sliding window at step 7000. Sparse converges faster
 (smaller, well-matched hypothesis space) and then overfits harder (sliding window
 ends with the lowest **training** loss of all four and the highest validation
-loss). `WRITEUP.md` §5 has the full account — it is the most interesting result
+loss). `WRITEUP.md` §5 has the full account. It is the most interesting result
 in the repository and it contradicts the first version of this experiment.
 
 ## Design in one paragraph
 
-A sparsity pattern is a block mask of shape `(H, NQB, NKB)` — "may query block
+A sparsity pattern is a block mask of shape `(H, NQB, NKB)`: "may query block
 *i* of head *h* read key block *j*". That single object has two consumers:
 `to_dense_mask` expands it to tokens to drive the dense reference, and
 `to_gather_index` compacts it to gather indices to drive the kernel. Because
@@ -131,7 +129,7 @@ and the result records which one was used:
 | Device | Probe | Exact? |
 | --- | --- | --- |
 | CUDA | `torch.cuda.max_memory_allocated` | yes, allocator-level |
-| MPS | sampling thread on `torch.mps.current_allocated_memory` @2 kHz | approximate — `torch.mps` exposes no peak counter |
+| MPS | sampling thread on `torch.mps.current_allocated_memory` @2 kHz | approximate, `torch.mps` exposes no peak counter |
 | CPU | `ru_maxrss` of the subprocess | exact process high-water mark |
 
 Each configuration runs in a **fresh subprocess** so the high-water mark is

@@ -30,7 +30,7 @@
     "dim": 64,
     "block": 64,
     "repeats": 5,
-    "out": "/Users/darkangel/Github/sparse-attention-from-scratch/results/benchmark.json"
+    "out": "results/benchmark.json"
   },
   "rows": [
     {

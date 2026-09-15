@@ -21,6 +21,14 @@ from .blocksparse import block_sparse_attention
 from .dense import dense_attention
 from . import patterns as P
 
+# Tolerances per dtype.  float64 has a 52-bit mantissa (~15 decimal digits), so
+# 1e-12 leaves no room for a logic bug to hide inside rounding -- it is the
+# ground truth.  float32 has 24 bits (~7 digits); 2e-6 is roughly ten ulps after
+# a D=32 dot product and a softmax: tight enough to catch a real bug, loose
+# enough not to fire when PyTorch reorders a reduction.
+#
+# In practice every match check returns exactly 0.0, so the tolerance is never
+# load-bearing.  It exists so the harness does not become brittle.
 TOL = {torch.float64: 1e-12, torch.float32: 2e-6}
 
 
@@ -32,11 +40,20 @@ class Result:
 
 @dataclass
 class Check:
+    # A name plus a zero-argument callable.  Deliberately minimal: both
+    # scripts/check_correctness.py and tests/test_correctness.py consume
+    # all_checks(), so neither can disagree with the other about what passed.
     name: str
     run: Callable[[], Result]
 
 
 def _qkv(B, H, N, D, dtype, scale=1.0, seed=0, device="cpu"):
+    """Seeded inputs, generated in float64 on CPU then downcast.
+
+    Generating in f64 and casting means the f32 and f64 runs see THE SAME
+    NUMBERS.  Without that they would be two different problems and the
+    precision analysis in check_adversarial_magnitudes would be impossible.
+    """
     g = torch.Generator(device="cpu").manual_seed(seed)
     mk = lambda: (torch.randn(B, H, N, D, generator=g, dtype=torch.float64) * scale).to(
         device=device, dtype=dtype)
@@ -63,9 +80,14 @@ def _match(pattern_name, N, bs, dtype, causal, B=2, H=4, D=32, scale=1.0,
     """The core check: kernel output == dense output under the same mask."""
     pat = _build(pattern_name, N, bs, H, causal, device=device)
     q, k, v = _qkv(B, H, N, D, dtype, scale=scale, device=device)
+    # THE KEY LINE OF THE WHOLE HARNESS.  Both sides come from ONE pattern:
+    # to_dense_mask drives the reference, to_gather_index (inside the kernel)
+    # drives the fast path.  Written twice, the harness could pass while both
+    # were wrong in the same way.  unsqueeze(0) adds the batch axis: the mask is
+    # (H,Nq,Nk) and broadcasts over B.
     mask = P.to_dense_mask(pat, N, N).unsqueeze(0)
-    ref = dense_attention(q, k, v, mask=mask)
-    got = block_sparse_attention(q, k, v, pat, q_chunk=q_chunk)
+    ref = dense_attention(q, k, v, mask=mask)                 # slow, obvious
+    got = block_sparse_attention(q, k, v, pat, q_chunk=q_chunk)  # fast, clever
     err = float((ref - got).abs().max())
     tol = TOL[dtype]
     return Result(err <= tol, f"max|err|={err:.3e} tol={tol:.0e} "
@@ -73,6 +95,12 @@ def _match(pattern_name, N, bs, dtype, causal, B=2, H=4, D=32, scale=1.0,
 
 
 def _iter_match_checks(device="cpu") -> Iterator[Check]:
+    """4 patterns x 4 shapes x 2 dtypes x 2 causal modes = 64 checks.
+
+    (320,64) and (200,32) are here specifically because N is NOT a multiple of
+    block_size -- the padding path is where off-by-ones live.  Remove them and
+    the harness stops testing _pad_to_blocks and the `kpos < N` guard entirely.
+    """
     for name in PATTERNS:
         for N, bs in [(256, 64), (320, 64), (512, 128), (200, 32)]:
             for dtype in (torch.float64, torch.float32):
@@ -80,6 +108,10 @@ def _iter_match_checks(device="cpu") -> Iterator[Check]:
                     label = (f"match/{name}/N{N}/bs{bs}/"
                              f"{'f64' if dtype == torch.float64 else 'f32'}/"
                              f"{'causal' if causal else 'full'}")
+                    # Default-argument binding (n=name, N=N, ...) captures the
+                    # loop variables BY VALUE.  Without it every lambda would
+                    # close over the same names and all 64 checks would run the
+                    # final configuration -- the classic Python late-binding bug.
                     yield Check(label, lambda n=name, N=N, bs=bs, d=dtype, c=causal:
                                 _match(n, N, bs, d, c, device=device))
 
@@ -221,11 +253,15 @@ def check_backward_matches(device="cpu") -> Result:
     pat = _build("bigbird", N, bs, H, True, device=device)
     mask = P.to_dense_mask(pat, N, N).unsqueeze(0)
     base = _qkv(B, H, N, D, torch.float64, device=device)
+    # float64 so the comparison is about the GRADIENT FORMULA, not rounding.
     grads = []
     for fn in (lambda a, b, c: dense_attention(a, b, c, mask=mask),
                lambda a, b, c: block_sparse_attention(a, b, c, pat)):
         t = [x.clone().requires_grad_(True) for x in base]
         out = fn(*t)
+        # Weight the output non-uniformly before summing.  A plain .sum() gives
+        # every element gradient 1.0, which can mask errors that cancel; an
+        # asymmetric weighting does not.
         (out * torch.linspace(0.1, 1.0, D, dtype=torch.float64, device=device)).sum().backward()
         grads.append([x.grad for x in t])
     err = max(float((a - b).abs().max()) for a, b in zip(*grads))
