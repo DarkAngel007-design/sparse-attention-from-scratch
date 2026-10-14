@@ -12,9 +12,6 @@ from .dense import causal_mask, dense_attention, masked_softmax
 from .blocksparse import block_sparse_attention, peak_score_elements
 from . import patterns
 
-# `patterns` is exported as a MODULE, not as individual builders: callers write
-# P.sliding_window(...) / P.bigbird(...), which keeps it obvious at the call site
-# that a pattern is being constructed rather than attention being computed.
 __all__ = [
     "dense_attention", "masked_softmax", "causal_mask",
     "block_sparse_attention", "peak_score_elements", "patterns",

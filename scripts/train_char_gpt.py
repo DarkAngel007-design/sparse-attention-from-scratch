@@ -62,12 +62,8 @@ def batches(split_ids, steps, batch, context, seed):
     """
     g = torch.Generator().manual_seed(seed)
     for _ in range(steps):
-        # Sample random start offsets.  -context-1 so that i+context+1 is always
-        # in range for the shifted target below.
         ix = torch.randint(len(split_ids) - context - 1, (batch,), generator=g)
-        x = torch.stack([split_ids[i:i + context] for i in ix])          # inputs
-        # Targets are inputs shifted by ONE: at every position, predict the next
-        # character.  That single offset is the entire training signal.
+        x = torch.stack([split_ids[i:i + context] for i in ix])
         y = torch.stack([split_ids[i + 1:i + 1 + context] for i in ix])
         yield x.to(dev), y.to(dev)
 
@@ -85,18 +81,13 @@ def make_pattern(name, cfg):
     raise KeyError(name)
 
 
-@torch.no_grad()                # no gradients needed for eval: faster, less memory
+@torch.no_grad()
 def evaluate(model):
-    # .eval() switches dropout/batchnorm to inference behaviour.  Here dropout is
-    # 0.0 so it changes nothing -- but forgetting it is a classic silent bug, so
-    # the habit is worth keeping.
     model.eval()
     tot = 0.0
-    # seed=99, FIXED and independent of the training seed: every arm and every
-    # eval point is scored on the identical set of validation batches.
     for x, y in batches(val_ids, a.eval_batches, a.batch, a.context, seed=99):
         tot += model(x, y)[1].item()
-    model.train()               # back to training mode -- also easy to forget
+    model.train()
     return tot / a.eval_batches
 
 
@@ -107,27 +98,12 @@ for name in a.patterns:
     cfg = GPTConfig(vocab_size=len(chars), context=a.context)
     pat = make_pattern(name, cfg)
     dens = 1.0 if pat is None else pat.token_density(a.context)
-    # Causal dense has density 0.5 by construction; report sparsity relative to it.
-    # (Exactly (N+1)/2N: row i has i+1 allowed keys, summed over i and divided by
-    # N^2.)  Quoting raw density against 1.0 would understate every pattern.
     dense_causal = 0.5 + 0.5 / a.context
     rel = dens / dense_causal if pat is not None else 1.0
 
-    # THE CONTROL.  Seeding immediately before construction means every pattern
-    # starts from bit-identical weights for a given seed.  Without this the
-    # comparison is confounded by initialisation and the whole experiment is
-    # uninterpretable.
-    torch.manual_seed(seed)            # identical init across patterns, per seed
+    torch.manual_seed(seed)
     model = CharGPT(cfg, pat).to(dev)
-    # Sanity: a sparsity mask adds NO parameters, so this must be identical
-    # across arms (445,184).  If it were not, the arms would have different
-    # capacity and the loss comparison would mean nothing.
     nparam = sum(p.numel() for p in model.parameters())
-    # AdamW: per-parameter adaptive step sizes from running averages of the
-    # gradient (beta1=0.9) and its square (beta2=0.95).  The "W" is DECOUPLED
-    # weight decay -- pulling weights toward zero separately from the gradient
-    # step, which is the mathematically correct form of L2 for adaptive
-    # optimisers.  betas/decay are the GPT-2 small conventions.
     opt = torch.optim.AdamW(model.parameters(), lr=a.lr, weight_decay=0.1,
                             betas=(0.9, 0.95))
 
@@ -137,18 +113,10 @@ for name in a.patterns:
     for step, (x, y) in enumerate(batches(train_ids, a.steps, a.batch, a.context,
                                           seed=seed), start=1):
         _, loss = model(x, y)
-        # MANDATORY: PyTorch ACCUMULATES into .grad.  Skip this and gradients sum
-        # across steps, the effective learning rate grows without bound, and the
-        # run diverges.  set_to_none=True frees the tensors instead of filling
-        # them with zeros (slightly faster, and a forgotten backward shows up as
-        # None rather than a stale zero).
         opt.zero_grad(set_to_none=True)
-        loss.backward()                             # walk the graph, fill .grad
-        # Rescale the whole gradient vector if its norm exceeds 1.0.  Preserves
-        # DIRECTION, changes only magnitude -- stops one bad batch from blowing
-        # up the weights.
+        loss.backward()
         torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
-        opt.step()                                  # apply the update
+        opt.step()
         if step % a.eval_every == 0 or step == a.steps:
             vl = evaluate(model)
             hist.append(dict(step=step, train=loss.item(), val=vl))
@@ -171,12 +139,6 @@ base = results.get("dense", {})
 b, bspread = base.get("final_val"), base.get("val_spread", 0.0)
 for k, r in results.items():
     d = r['final_val'] - b if b else 0.0
-    # A gap is only worth talking about if it is bigger than the seed-to-seed
-    # spread of the two arms it is drawn from.
-    # THE SIGNIFICANCE GATE.  Compare the gap against the WIDER of the two arms'
-    # seed spreads.  Crude -- it is a range, not a confidence interval -- but it
-    # is enough to stop the headline claim being noise, which is exactly what
-    # went wrong in the first single-seed version of this experiment.
     noise = max(bspread, r["val_spread"])
     sig = "--" if k == "dense" else ("yes" if abs(d) > noise else "NO")
     print(f"{k:16s} {r['density']:8.3f} {r['rel_density']:9.1%} "

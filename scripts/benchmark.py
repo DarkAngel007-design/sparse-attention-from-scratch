@@ -52,8 +52,6 @@ def hardware():
     return hw
 
 
-# Sweep N in the outer loop so partial output is comparable across patterns at
-# the same length if the run is interrupted.
 rows = []
 print(f"{'pattern':16s} {'N':>6s} {'density':>8s} {'ms':>9s} {'peak MB':>9s} {'score elems':>13s}")
 print("-" * 70)
@@ -63,19 +61,11 @@ for N in a.seqs:
                "--pattern", pat, "--seq", str(N), "--device", a.device,
                "--heads", str(a.heads), "--dim", str(a.dim),
                "--block", str(a.block), "--repeats", str(a.repeats)]
-        # A FRESH SUBPROCESS per configuration.  Peak memory is a high-water
-        # mark that never decreases, so sharing a process would let dense@8192's
-        # 6.6 GB contaminate every later measurement.  It also isolates OOM: a
-        # config that dies takes its process with it.
         p = subprocess.run(cmd, capture_output=True, text=True)
-        # Take the LAST stdout line: warnings and progress bars may precede the
-        # JSON, but the JSON is always printed last.
         line = p.stdout.strip().splitlines()[-1] if p.stdout.strip() else ""
         try:
             r = json.loads(line)
         except json.JSONDecodeError:
-            # The child crashed before printing JSON (segfault, import error,
-            # killed by the OOM killer).  Record it and keep sweeping.
             r = dict(pattern=pat, seq=N, ok=False, error="CRASH",
                      message=(p.stderr.strip()[-200:] or "no output"))
         rows.append(r)
@@ -86,17 +76,11 @@ for N in a.seqs:
             print(f"{pat:16s} {N:6d} {'--':>8s} {r.get('error','?'):>9s} "
                   f"{'--':>9s} {'--':>13s}")
 
-# hardware + full config + every row, including failed ones.  Committed to the
-# repo so every number in WRITEUP.md can be checked without re-running a sweep.
-#
-# `out` is recorded RELATIVE to the repo root where possible: the default is an
-# absolute path built from ROOT, and committing that would bake the author's
-# home directory into a public artifact for no benefit.
 cfg = vars(a).copy()
 try:
     cfg["out"] = str(pathlib.Path(a.out).resolve().relative_to(ROOT))
 except ValueError:
-    pass                      # --out pointed outside the repo; leave it as given
+    pass
 out = dict(hardware=hardware(), config=cfg, rows=rows)
 pathlib.Path(a.out).parent.mkdir(parents=True, exist_ok=True)
 pathlib.Path(a.out).write_text(json.dumps(out, indent=2))

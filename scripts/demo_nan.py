@@ -14,15 +14,13 @@ def rule(t):
     print(f"\n{'='*72}\n{t}\n{'='*72}")
 
 
-# Tiny shapes on purpose: the whole point is that you can print every number and
-# see the nan with your own eyes.
 torch.manual_seed(0)
 B, H, N, D = 1, 2, 8, 4
 q, k, v = (torch.randn(B, H, N, D) for _ in range(3))
 
 rule("1. The failure, in four lines")
 mask = torch.ones(B, H, N, N, dtype=torch.bool).tril()
-mask[0, 0, 3, :] = False          # query 3 of head 0 is allowed to see nothing
+mask[0, 0, 3, :] = False
 scores = (q @ k.transpose(-2, -1)) / D**0.5
 naive = torch.softmax(scores.masked_fill(~mask, float("-inf")), dim=-1)
 print("row 3 logits :", scores.masked_fill(~mask, float('-inf'))[0, 0, 3].tolist())
@@ -41,7 +39,7 @@ def variant(additive: bool, patch: str):
     qg = q.clone().requires_grad_(True)
     vg = v.clone().requires_grad_(True)
     s_ = (qg @ k.transpose(-2, -1)) / D**0.5
-    if additive:                        # what HuggingFace et al. actually do
+    if additive:
         s_ = s_ + torch.zeros_like(s_).masked_fill(~mask, float("-inf"))
     else:
         s_ = s_.masked_fill(~mask, float("-inf"))

@@ -33,10 +33,6 @@ def plot_benchmark():
         print("no benchmark.json, skipping"); return
     d = json.loads(path.read_text())
     rows = [r for r in d["rows"] if r.get("ok")]
-    # Sort on (is-not-dense, name), not on the boolean alone.  Sorting a *set* by
-    # a bool puts "dense" first and leaves the rest in set-iteration order, which
-    # depends on PYTHONHASHSEED -- so the draw order of the three sparse curves,
-    # and hence the pixels where they overlap, changed between runs.
     pats = sorted({r["pattern"] for r in rows}, key=lambda p: (p != "dense", p))
 
     fig, axes = plt.subplots(1, 3, figsize=(16, 4.6))
@@ -55,11 +51,8 @@ def plot_benchmark():
         ax.set_xlabel("sequence length"); ax.set_ylabel(yl)
         ax.set_title(t); ax.grid(alpha=.3, which="both"); ax.legend(fontsize=8)
 
-    # Reference slopes make the O(N) vs O(N^2) claim readable rather than asserted.
     xs = [r["seq"] for r in sorted(rows, key=lambda r: r["seq"])]
     x0, x1 = min(xs), max(xs)
-    # Reference slopes are drawn slightly inside the data range and labelled at
-    # their left end, so the annotation never collides with the N=8192 markers.
     xm = x1 / 1.7
     for ax, base in ((axes[1], 22), (axes[2], 1.4)):
         ax.plot([x0, xm], [base, base*(xm/x0)], ":", color="gray", lw=1.2)
@@ -73,7 +66,6 @@ def plot_benchmark():
     fig.savefig(OUT / "benchmark.png", dpi=150)
     print("wrote", OUT / "benchmark.png")
 
-    # Speedup / memory-saving ratios -- the number a reader actually wants.
     dense = {r["seq"]: r for r in rows if r["pattern"] == "dense"}
     fig, axes = plt.subplots(1, 2, figsize=(11, 4.2))
     for p in pats:
@@ -113,8 +105,6 @@ def plot_quality():
         for name, r in d["results"].items():
             seeds = r.get("seeds")
             if seeds and len(seeds) > 1:
-                # Plot the mean with a min-max band across seeds. Without the
-                # band a 0.06 gap and a 0.002 gap look identical on the page.
                 steps = [h["step"] for h in seeds[0]["history"]]
                 curves = [[h["val"] for h in s_["history"]] for s_ in seeds]
                 mean = [sum(c[i] for c in curves) / len(curves) for i in range(len(steps))]
@@ -133,7 +123,6 @@ def plot_quality():
                      f"shaded = min-max over {n_seeds} seeds", fontsize=10)
         ax.grid(alpha=.3); ax.legend(fontsize=8)
 
-    # Final loss against density, which is the comparison 1.6 is really asking for.
     ax = axes[0][-1]
     d = json.loads(paths[-1].read_text())
     for name, r in d["results"].items():
